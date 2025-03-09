@@ -268,6 +268,39 @@ def get_financial_statements(symbol: str) -> Dict[str, Any]:
         return [default_item, default_item]
 
 
+def get_and_process_data(symbol, start_date, end_date, adjust):
+    """获取并处理数据，包括重命名列等操作"""
+    df = ak.stock_zh_a_hist(
+        symbol=symbol,
+        period="daily",
+        start_date=start_date.strftime("%Y%m%d"),
+        end_date=end_date.strftime("%Y%m%d"),
+        adjust=adjust
+    )
+
+    if df is None or df.empty:
+        return pd.DataFrame()
+
+    # 重命名列以匹配技术分析代理的需求
+    df = df.rename(columns={
+        "日期": "date",
+        "开盘": "open",
+        "最高": "high",
+        "最低": "low",
+        "收盘": "close",
+        "成交量": "volume",
+        "成交额": "amount",
+        "振幅": "amplitude",
+        "涨跌幅": "pct_change",
+        "涨跌额": "change_amount",
+        "换手率": "turnover"
+    })
+
+    # 确保日期列为datetime类型
+    df["date"] = pd.to_datetime(df["date"])
+    return df
+
+
 def get_market_data(symbol: str) -> Dict[str, Any]:
     """获取市场数据"""
     try:
@@ -331,7 +364,7 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
     try:
         # 获取当前日期和昨天的日期
         current_date = datetime.now()
-        yesterday = current_date - timedelta(days=1)
+        yesterday = current_date - timedelta(days=5)
 
         # 如果没有提供日期，默认使用昨天作为结束日期
         if not end_date:
@@ -351,40 +384,8 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
         print(f"开始日期：{start_date.strftime('%Y-%m-%d')}")
         print(f"结束日期：{end_date.strftime('%Y-%m-%d')}")
 
-        def get_and_process_data(start_date, end_date):
-            """获取并处理数据，包括重命名列等操作"""
-            df = ak.stock_zh_a_hist(
-                symbol=symbol,
-                period="daily",
-                start_date=start_date.strftime("%Y%m%d"),
-                end_date=end_date.strftime("%Y%m%d"),
-                adjust=adjust
-            )
-
-            if df is None or df.empty:
-                return pd.DataFrame()
-
-            # 重命名列以匹配技术分析代理的需求
-            df = df.rename(columns={
-                "日期": "date",
-                "开盘": "open",
-                "最高": "high",
-                "最低": "low",
-                "收盘": "close",
-                "成交量": "volume",
-                "成交额": "amount",
-                "振幅": "amplitude",
-                "涨跌幅": "pct_change",
-                "涨跌额": "change_amount",
-                "换手率": "turnover"
-            })
-
-            # 确保日期列为datetime类型
-            df["date"] = pd.to_datetime(df["date"])
-            return df
-
         # 获取历史行情数据
-        df = get_and_process_data(start_date, end_date)
+        df = get_and_process_data(symbol, start_date, end_date, adjust)
 
         if df is None or df.empty:
             print(f"警告：未获取到 {symbol} 的历史行情数据")
@@ -399,7 +400,7 @@ def get_price_history(symbol: str, start_date: str = None, end_date: str = None,
 
             # 扩大时间范围到2年
             start_date = end_date - timedelta(days=730)
-            df = get_and_process_data(start_date, end_date)
+            df = get_and_process_data(symbol, start_date, end_date, adjust)
 
             if len(df) < min_required_days:
                 print(f"警告：即使扩大时间范围，数据量（{len(df)}条）仍然不足")
