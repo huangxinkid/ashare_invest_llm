@@ -2,10 +2,11 @@ import os
 import time
 import logging
 # from google import genai
-import google.generativeai as genai
+#import google.generativeai as genai
 from dotenv import load_dotenv
 from dataclasses import dataclass
 import backoff
+from .transfer_openai_client import GeminiLikeAPI
 
 # 设置日志记录
 logger = logging.getLogger('api_calls')
@@ -94,7 +95,8 @@ if not model:
     logger.info(f"{WAIT_ICON} 使用默认模型: {model}")
 
 # 移除client初始化
-genai.configure(api_key=api_key)
+#genai.configure(api_key=api_key)
+client = GeminiLikeAPI()
 logger.info(f"{SUCCESS_ICON} Gemini 客户端初始化成功")
 
 
@@ -114,10 +116,10 @@ def generate_content_with_retry(model_name, contents, config=None):
         logger.info(f"请求配置: {config}")
 
         # 创建模型实例
-        model = genai.GenerativeModel(model_name)
+        #model = genai.GenerativeModel(model_name)
         
         # 生成响应
-        response = model.generate_content(contents)
+        response = client.generate_content(contents)
         
         logger.info(f"{SUCCESS_ICON} API 调用成功")
         logger.info(f"响应内容: {response.text[:500]}..." if len(

@@ -17,6 +17,12 @@ openai.api_key = os.getenv("GEMINI_API_KEY")
 openai.api_base="https://api.siliconflow.cn/v1"
 client = OpenAI(api_key=openai.api_key ,base_url=openai.api_base)
 
+
+class ResponseWrap:
+    def __init__(self, text):
+        self.text = text
+
+
 class GeminiLikeAPI:
     def __init__(self, client=client, model=model_name):
         """
@@ -53,7 +59,7 @@ class GeminiLikeAPI:
                 {"role": "user", "content": content},
             ]
             response = self.chat(messages)
-            return response
+            return ResponseWrap(response)
         except Exception as e:
             return f"Error: {e}"
 
@@ -70,5 +76,5 @@ if __name__ == "__main__":
 
     # 文本生成示例
     prompt = "Write a short story about a magical forest."
-    generated_text = api.generate(prompt)
-    print("Generated Text:", generated_text)
+    generated_text = api.generate_content(prompt)
+    print("Generated Text:", generated_text.text)
