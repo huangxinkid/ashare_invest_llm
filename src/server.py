@@ -25,7 +25,11 @@ class PrintCapture:
 class HedgeFundHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
     def get(self):
-        ticker = self.get_argument('ticker')
+        # 渲染表单页面
+        self.render("form.html")
+
+    def post(self):
+        ticker = self.get_argument("name", "")
         start_date = self.get_argument('start-date', None)
         end_date = self.get_argument('end-date', None)
         show_reasoning = self.get_argument('show-reasoning', 'false').lower() == 'true'
@@ -49,13 +53,13 @@ class HedgeFundHandler(tornado.web.RequestHandler):
             )
 
         output = capture.get_output()
-        self.write(f'<pre>{output}</pre>')
-        self.write(f'<pre>Final Result: {result}</pre>')
+
+        self.render("result.html", name=result)
 
 if __name__ == "__main__":
     app = tornado.web.Application([
-        (r"/hedge_fund", HedgeFundHandler),
-    ])
+        (r"/", HedgeFundHandler),
+    ],  template_path="templates")
     app.listen(8888)
-    print("Server is running on http://localhost:8888")
+    print("Server is running on http://0.0.0.0:8888")
     tornado.ioloop.IOLoop.current().start()
