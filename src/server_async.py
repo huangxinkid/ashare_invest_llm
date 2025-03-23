@@ -68,7 +68,7 @@ class HedgeFundHandler(tornado.web.RequestHandler):
         tornado.ioloop.IOLoop.current().run_in_executor(executor, self.run_hedge_fund_async, task_id)
 
         # 返回任务 ID 到前端
-        self.write(json.dumps({"task_id": task_id}))
+        self.render("result_async.html", task_id=task_id)
 
     def run_hedge_fund_async(self, task_id):
         try:

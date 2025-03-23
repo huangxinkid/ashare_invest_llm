@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .result-container {
+            text-align: center;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            white-space: pre-line;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 20px;
+            background-color: #4caf50;
+            width: 0;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script>
+        async function getResult() {
+            try {
+                let task_id = this.taskId;
+                // 发送 GET 请求
+                let url = "/result?task_id=" + task_id;
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                });
+
+                // 检查响应是否成功
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+
+                // 解析响应数据
+                const data = await response.json();
+                console.log(data);
+
+                // 更新进度
+                this.progress += 5;
+                if (this.progress > 100) {
+                    this.progress = 100;
+                }
+
+                // 如果满足某个条件，停止定时器
+                if (data.status === "finished") {
+                    clearInterval(this.intervalId);
+                    console.log("定时请求已停止");
+                    this.progress = 100;
+                    // 更新页面内容
+                    this.result = "Result: " + data.result;
+                }
+            } catch (error) {
+                // 处理错误
+                console.error("There was a problem with the fetch operation:", error);
+                this.result = "Error: " + error.message;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            new Vue({
+                el: "#app",
+                data: {
+                    taskId: "{{ task_id }}", // 使用 Tornado 模板语法
+                    result: "请等待分析结果",
+                    progress: 0,
+                    intervalId: null
+                },
+                methods: {
+                    getResult
+                },
+                mounted() {
+                    // 保存定时器的 ID
+                    this.intervalId = setInterval(this.getResult, 5000);
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div id="app" class="result-container">
+        <div id="task_id" v-text="taskId"></div>
+        <div v-text="result"></div>
+        <div class="progress-bar">
+            <div class="progress-bar-fill" :style="{ width: progress + '%' }"></div>
+        </div>
+    </div>
+</body>
+</html>
