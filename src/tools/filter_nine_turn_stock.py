@@ -56,7 +56,9 @@ def get_need_ticker():
             #if is_magic_9_turns(stock_code):
             if stock.换手率 >=20 or stock.换手率 <10:
                 continue
-            selected_stocks.append((stock_code, stock_name))
+            if stock.最新价 >=100 or stock.最新价 <5:
+                continue
+            selected_stocks.append({'code': stock_code, 'name': stock_name})
         except Exception as e:
             print(f"处理股票 {stock_code} 时出错: {e}")
 

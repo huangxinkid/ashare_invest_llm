@@ -8,6 +8,8 @@ import json
 import uuid
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from tools.filter_nine_turn_stock import get_need_ticker as get_propose_ticker
+from datetime import datetime, timedelta
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -121,11 +123,24 @@ class ResultHandler(tornado.web.RequestHandler):
         else:
             self.write(json.dumps({"status": "not_found"}))
 
+class ProposeHandler(tornado.web.RequestHandler):
+
+    def get(self):
+        # 设置 HTTP 缓存头，缓存时间为 8 小时
+        self.set_header("Cache-Control", "max-age=28800, public")
+        self.set_header("Expires", datetime.now() + timedelta(hours=8))
+        # 获取数据
+        data = get_propose_ticker()
+        # 渲染 HTML 页面
+        self.render("propose_ticker.html", data=data)
+
+
 if __name__ == "__main__":
     app = tornado.web.Application([
         (r"/", HedgeFundHandler),
         (r"/redirect", RedirectHandler),
         (r"/result", ResultHandler),
+        (r"/propose", ProposeHandler),
     ], template_path="templates")
     app.listen(8888)
     tornado.ioloop.IOLoop.current().start()
