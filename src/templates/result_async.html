@@ -14,7 +14,7 @@
             font-family: Arial, sans-serif;
         }
         .result-container {
-            text-align: center;
+            text-align: left;
             border: 1px solid #ccc;
             padding: 20px;
             border-radius: 8px;
@@ -59,7 +59,7 @@
                 // 更新进度
                 this.progress += 5;
                 if (this.progress > 100) {
-                    this.progress = 100;
+                    this.progress = 5;
                 }
 
                 // 如果满足某个条件，停止定时器
@@ -68,7 +68,12 @@
                     console.log("定时请求已停止");
                     this.progress = 100;
                     // 更新页面内容
-                    this.result = "Result: " + data.result;
+                    this.action = data.result.action;
+                    this.quantity = data.result.quantity;
+                    this.confidence = data.result.confidence;
+                    this.reasoning = data.result.reasoning;
+                    this.agent_signals = data.result.agent_signals
+                    this.status = 'ok'
                 }
             } catch (error) {
                 // 处理错误
@@ -82,7 +87,14 @@
                 el: "#app",
                 data: {
                     taskId: "{{ task_id }}", // 使用 Tornado 模板语法
+                    ticker: "{{ ticker }}",
+                    status: 'waiting',
                     result: "请等待分析结果",
+                    action: "",
+                    quantity: 0,
+                    confidence: 0,
+                    reasoning: "",
+                    agent_signals: null,
                     progress: 0,
                     intervalId: null
                 },
@@ -99,10 +111,37 @@
 </head>
 <body>
     <div id="app" class="result-container">
-        <div id="task_id" v-text="taskId"></div>
-        <div v-text="result"></div>
-        <div class="progress-bar">
-            <div class="progress-bar-fill" :style="{ width: progress + '%' }"></div>
+        <div id="ticker">
+            <span>股票代码：</span>
+            <span v-text="ticker"></span>
+        </div>
+        <div v-if="status==='waiting'">
+            <div v-text="result"></div>
+            <div class="progress-bar">
+                <div class="progress-bar-fill" :style="{ width: progress + '%' }"></div>
+            </div>
+        </div>
+        <div v-else style="width: 80%;">
+            <p>
+                <span>操作建议：</span>
+                <span v-text="action"></span>
+            </p>
+            <p>
+                <span>数量：</span>
+                <span v-text="quantity"></span>
+            </p>
+            <p>
+                <span>信心：</span>
+                <span v-text="confidence"></span>
+            </p>
+            <p>
+                <span>理由：</span>
+                <span v-text="reasoning"></span>
+            </p>
+            <p>
+                <span>决策详情：</span>
+                <span v-text="agent_signals"></span>
+            </p>
         </div>
     </div>
 </body>

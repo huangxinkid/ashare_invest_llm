@@ -45,13 +45,12 @@ class HedgeFundHandler(tornado.web.RequestHandler):
 
     def post(self):
         ticker = self.get_argument("name", "")
-        start_date = self.get_argument('start-date', None)
-        end_date = self.get_argument('end-date', None)
+        start_date = self.get_argument('start_date', None)
+        end_date = self.get_argument('end_date', None)
         show_reasoning = self.get_argument('show-reasoning', 'false').lower() == 'true'
-        num_of_news = int(self.get_argument('num-of-news', 5))
+        num_of_news = int(self.get_argument('news_count', 5))
         initial_capital = float(self.get_argument('initial-capital', 100000.0))
         initial_position = int(self.get_argument('initial-position', 0))
-
         task_id = str(uuid.uuid4())
         tasks[task_id] = {
             "ticker": ticker,
@@ -66,9 +65,7 @@ class HedgeFundHandler(tornado.web.RequestHandler):
         }
         logger.info(f"Starting task {task_id}")
         tornado.ioloop.IOLoop.current().run_in_executor(executor, self.run_hedge_fund_async, task_id)
-
-        # 返回任务 ID 到前端
-        self.render("result_async.html", task_id=task_id)
+        self.redirect(f"/redirect?task_id={task_id}&ticker={ticker}")
 
     def run_hedge_fund_async(self, task_id):
         try:
@@ -93,12 +90,24 @@ class HedgeFundHandler(tornado.web.RequestHandler):
             )
             # 更新任务状态和结果
             task["status"] = "finished"
-            task["result"] = result
+            task["result"] = json.loads(result)
             logger.info(f"Task {task_id} finished")
         except Exception as e:
             logger.error(f"Error in task {task_id}: {e}")
             task["status"] = "error"
             task["result"] = str(e)
+
+
+class RedirectHandler(tornado.web.RequestHandler):
+    def get(self):
+        task_id = self.get_argument("task_id", "")
+        ticker = self.get_argument("ticker", "")
+        if task_id not in tasks:
+            self.write(json.dumps({"status": "not_found"}))
+            return
+        # 返回任务 ID 到前端
+        self.render("result_async.html", task_id=task_id, ticker=ticker)
+
 
 class ResultHandler(tornado.web.RequestHandler):
     def get(self):
@@ -115,6 +124,7 @@ class ResultHandler(tornado.web.RequestHandler):
 if __name__ == "__main__":
     app = tornado.web.Application([
         (r"/", HedgeFundHandler),
+        (r"/redirect", RedirectHandler),
         (r"/result", ResultHandler),
     ], template_path="templates")
     app.listen(8888)
