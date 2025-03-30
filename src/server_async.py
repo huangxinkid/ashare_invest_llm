@@ -10,6 +10,8 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from tools.filter_nine_turn_stock import get_need_ticker as get_propose_ticker
 from datetime import datetime, timedelta
+from typing import List, Dict
+import time
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +40,8 @@ class PrintCapture:
 
 executor = ThreadPoolExecutor(max_workers=10)  # 增加线程池大小
 tasks = {}
+batch_tickers = []
+
 
 class HedgeFundHandler(tornado.web.RequestHandler):
     @tornado.gen.coroutine
@@ -125,15 +129,39 @@ class ResultHandler(tornado.web.RequestHandler):
 
 class ProposeHandler(tornado.web.RequestHandler):
 
-    def get(self):
-        # 设置 HTTP 缓存头，缓存时间为 8 小时
-        self.set_header("Cache-Control", "max-age=28800, public")
-        self.set_header("Expires", datetime.now() + timedelta(hours=8))
+    async def get(self):
         # 获取数据
-        data = get_propose_ticker()
+        global batch_tickers
+        if len(batch_tickers) == 0:
+            batch_tickers = await get_propose_ticker()
+            tornado.ioloop.IOLoop.current().run_in_executor(executor, self.batch_run_hedge_fund_async)
         # 渲染 HTML 页面
-        self.render("propose_ticker.html", data=data)
+        self.render("propose_ticker.html", tickers=batch_tickers)
 
+    def batch_run_hedge_fund_async(self):
+        for ticker in batch_tickers:
+            portfolio = {
+                "cash": 100000,
+                "stock": 0
+            }
+            try:
+                result = run_hedge_fund(
+                    ticker=ticker['code'],
+                    start_date='2024-09-01',
+                    end_date=datetime.now().strftime('%Y-%m-%d'),
+                    portfolio=portfolio,
+                    show_reasoning=False,
+                    num_of_news=5
+                )
+                ticker["status"] = "finished"
+                result = json.loads(result)
+                ticker["action"] = result['action']
+                ticker["result"] = result
+                time.sleep(10)
+            except Exception as e:
+                ticker['status'] =  'fail'
+                print(str(e))
+        
 
 if __name__ == "__main__":
     app = tornado.web.Application([

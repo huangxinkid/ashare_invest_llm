@@ -1,7 +1,16 @@
 import akshare as ak
 import pandas as pd
 from datetime import datetime, timedelta
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
+filter_executor = ThreadPoolExecutor(max_workers=2)
+
+
+async def async_stock_zh_a_spot_em():
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(filter_executor, ak.stock_zh_a_spot_em, )
+    return result
 
 
 # 定义“神奇九转”指标筛选逻辑
@@ -41,9 +50,9 @@ def is_magic_9_turns(stock_code, period=9):
     return ninth_rise > avg_rise
 
 
-def get_need_ticker():
+async def get_need_ticker():
     # 获取沪深京 A 股实时行情数据
-    stock_data = ak.stock_zh_a_spot_em()
+    stock_data = await async_stock_zh_a_spot_em()
 
     # 筛选出涨幅大于 0 的股票
     rising_stocks = stock_data[stock_data['涨跌幅'] > 5]
@@ -58,7 +67,9 @@ def get_need_ticker():
                 continue
             if stock.最新价 >=100 or stock.最新价 <5:
                 continue
-            selected_stocks.append({'code': stock_code, 'name': stock_name})
+            selected_stocks.append(
+                {'code': stock_code, 'name': stock_name,
+                 'status': 'running', 'action': '', 'result': ''})
         except Exception as e:
             print(f"处理股票 {stock_code} 时出错: {e}")
 
@@ -68,5 +79,5 @@ def get_need_ticker():
 
 
 if __name__ == '__main__':
-    ret = get_need_ticker()
+    ret = asyncio.run(get_need_ticker())
     print(ret)
