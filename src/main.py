@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     # Set end date to yesterday if not specified
     current_date = datetime.now()
-    yesterday = current_date - timedelta(days=1)
+    yesterday = current_date - timedelta(days=1) if current_date.hour < 15 else current_date
     end_date = yesterday if not args.end_date else min(
         datetime.strptime(args.end_date, '%Y-%m-%d'), yesterday)
 
