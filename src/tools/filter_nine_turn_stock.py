@@ -62,10 +62,11 @@ async def get_need_ticker():
         try:
             stock_code = stock.代码
             stock_name = stock.名称
-            #if is_magic_9_turns(stock_code):
             if stock.换手率 >=20 or stock.换手率 <10:
                 continue
             if stock.最新价 >=100 or stock.最新价 <5:
+                continue
+            if not is_magic_9_turns(stock_code):
                 continue
             selected_stocks.append(
                 {'code': stock_code, 'name': stock_name,
