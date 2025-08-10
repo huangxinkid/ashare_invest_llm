@@ -64,6 +64,14 @@
         function closeModal() {
             document.getElementById('modal').style.display = 'none';
         }
+        function autoRefresh() {
+            setTimeout(function() {
+                location.reload();
+            }, 10000); // 10000 milliseconds = 10 seconds
+        }
+
+        // Call the autoRefresh function when the page loads
+        window.onload = autoRefresh;
     </script>
 </head>
 <body>
@@ -89,7 +97,7 @@
                         <td>{{ item['name'] }}</td>
                         <td>{{ item['code'] }}</td>
                         <td>{{ item['status'] }}</td>
-                        <td onclick="showModal({{ item['result'] }})">{{ item['action'] }}</td>
+                        <td onclick="showModal({{ item['result'] }})" style="cursor: pointer;">{{ item['action'] }}</td>
                     </tr>
                     {% set index = index + 1 %}
                     {% end %}
